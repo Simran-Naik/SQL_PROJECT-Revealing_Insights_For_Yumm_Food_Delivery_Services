@@ -1,0 +1,24 @@
+SELECT Name FROM users WHERE user_id NOT IN  (SELECT User_Id FROM orders);
+
+SELECT f.Food_Id,f.Food_Name,avg(Price) AS "Average price" FROM menu m JOIN food f ON m.Food_Id=f.Food_Id  GROUP BY  f.Food_Id,f.Food_Name ;
+
+SELECT Hotel_Id,count(*) AS "Month"  FROM orders  WHERE monthname(date) LIKE "June" GROUP BY  Hotel_Id;
+
+SELECT h.Hotel_Name,sum(o.amount) AS "revenue" FROM orders o JOIN hotel h ON  o.Hotel_Id=h.Hotel_Id WHERE  monthname(date)="June" GROUP BY h.Hotel_Id HAVING revenue >500 ;
+
+SET SESSION sql_mode = 'STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION';
+SELECT o.Order_Id,h.Hotel_Name,f.Food_Name FROM orders o JOIN hotel h ON h.Hotel_Id=o.Hotel_Id JOIN order_details od ON o.Order_Id=od.Order_Id
+JOIN food f ON f.Food_Id=od.Food_Id
+WHERE User_Id = (SELECT User_Id FROM users WHERE Name="Siya") AND (Date > "2022-06-10" AND Date < "2022-07-10");
+
+SELECT h.Hotel_Name,count(*) AS Loyal_Customers FROM (SELECT Hotel_Id,User_Id,count(*) AS "Visits" FROM orders GROUP BY Hotel_Id,User_Id HAVING Visits > 1) T
+JOIN hotel h ON h.Hotel_Id = T.Hotel_Id GROUP BY T.Hotel_Id ORDER BY Loyal_Customers DESC LIMIT 1;
+
+SELECT Month,((Revenue - Previous )/Previous)*100 AS "Month Over Month Revenue"FROM 
+(WITH sales AS (SELECT monthname(date) as "Month" ,sum(amount) AS "Revenue" FROM orders GROUP BY Month ORDER BY  Month(date)) 
+SELECT Month,Revenue,LAG(Revenue,1)  OVER (ORDER BY Revenue) AS Previous FROM sales) T ;
+
+WITH Temp AS(
+SELECT o.User_Id,od.Food_Id,count(*) AS "Frequency"  FROM orders o JOIN order_details od ON o.Order_Id=od.Order_Id GROUP BY  o.User_Id,od.Food_Id)
+SELECT u.Name,f.Food_Name,T1.Frequency  FROM Temp T1 JOIN users u  ON u.User_Id=T1.User_Id JOIN food f ON f.Food_Id=T1.Food_Id
+WHERE T1.Frequency = (SELECT max(Frequency) FROM Temp T2 WHERE T2.User_Id=T1.User_Id );
